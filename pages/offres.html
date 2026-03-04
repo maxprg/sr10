@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – Offres d'emploi</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div id="navbar-container"></div>
+
+<div class="page-wrapper">
+  <div class="page-header page-header-row">
+    <div>
+      <h1>Offres d'emploi</h1>
+      <p>Trouvez votre prochain poste parmi nos offres publiées</p>
+    </div>
+  </div>
+
+  <!-- ── Barre de recherche ── -->
+  <div class="search-bar">
+    <div class="search-bar-grid">
+      <div class="form-group mb-0">
+        <label for="s-titre">Titre / mot-clé</label>
+        <input type="text" id="s-titre" class="form-control" placeholder="Développeur, Chef de projet…" />
+      </div>
+      <div class="form-group mb-0">
+        <label for="s-lieu">Lieu</label>
+        <input type="text" id="s-lieu" class="form-control" placeholder="Paris, Lyon…" />
+      </div>
+      <div class="form-group mb-0">
+        <label for="s-metier">Domaine</label>
+        <select id="s-metier" class="form-control">
+          <option value="">Tous les domaines</option>
+          <option>Informatique</option>
+          <option>Cybersécurité</option>
+          <option>Marketing</option>
+          <option>Finance</option>
+          <option>RH</option>
+          <option>Commercial</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group mb-0">
+        <label for="s-salaire">Salaire brut annuel</label>
+        <select id="s-salaire" class="form-control">
+          <option value="">Peu importe</option>
+          <option value="0-30000">Jusqu'à 30 000 €</option>
+          <option value="25000-45000">25 000 – 45 000 €</option>
+          <option value="40000-60000">40 000 – 60 000 €</option>
+          <option value="55000-80000">55 000 – 80 000 €</option>
+          <option value="75000-999999">Plus de 75 000 €</option>
+        </select>
+      </div>
+      <div class="form-group mb-0" style="align-self:flex-end">
+        <button class="btn btn-primary" id="btn-search">Rechercher</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Barre de tri ── -->
+  <div class="offers-toolbar">
+    <span class="offers-count" id="offers-count">Chargement…</span>
+    <div class="d-flex gap-2 align-center">
+      <label class="text-sm text-muted" for="sort-select">Trier par :</label>
+      <select id="sort-select" class="form-control" style="width:auto;padding:.35rem .7rem;font-size:.85rem">
+        <option value="date_desc">Plus récentes</option>
+        <option value="date_asc">Plus anciennes</option>
+        <option value="salaire_desc">Salaire décroissant</option>
+        <option value="salaire_asc">Salaire croissant</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Alerte (ex. succès candidature) -->
+  <div id="page-alert"></div>
+
+  <!-- ── Grille d'offres ── -->
+  <div id="offers-grid" class="offers-grid">
+    <div class="loading-wrapper">
+      <div class="spinner"></div> Chargement des offres…
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="pagination-container"></div>
+</div>
+
+<!-- ══ Modal Détail offre ══ -->
+<div class="modal-overlay" id="modal-detail-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="detail-titre">Détail de l'offre</h3>
+      <button class="modal-close" onclick="hideModal('modal-detail-overlay')">×</button>
+    </div>
+    <div class="modal-body" id="detail-body">
+      <!-- contenu dynamique -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-detail-overlay')">Fermer</button>
+      <button class="btn btn-primary" id="btn-postuler" style="display:none">Postuler à cette offre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Confirmer candidature ══ -->
+<div class="modal-overlay" id="modal-apply-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Confirmer la candidature</h3>
+      <button class="modal-close" onclick="hideModal('modal-apply-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="apply-alert"></div>
+      <p>Vous allez postuler à l'offre :</p>
+      <p class="font-bold" id="apply-offre-titre">—</p>
+      <p class="text-sm text-muted">Pièces demandées : <span id="apply-pieces">—</span></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-apply-overlay')">Annuler</button>
+      <button class="btn btn-primary" id="btn-apply-confirm">Confirmer ma candidature</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  renderNavbar('navbar-container');
+
+  const PER_PAGE = 9;
+  let allOffers   = [];
+  let filtered    = [];
+  let currentPage = 1;
+  let currentOffer = null;
+
+  /* ── Charger les offres ── */
+  async function loadOffers() {
+    document.getElementById('offers-grid').innerHTML =
+      '<div class="loading-wrapper"><div class="spinner"></div> Chargement…</div>';
+    try {
+      const params = new URLSearchParams();
+      const titre   = document.getElementById('s-titre').value.trim();
+      const lieu    = document.getElementById('s-lieu').value.trim();
+      const metier  = document.getElementById('s-metier').value;
+      const salaire = document.getElementById('s-salaire').value;
+      if (titre)   params.set('titre', titre);
+      if (lieu)    params.set('lieu', lieu);
+      if (metier)  params.set('metier', metier);
+      if (salaire) params.set('salaire', salaire);
+
+      allOffers = await API.get('/api/offres?' + params.toString());
+      applySort();
+    } catch(err) {
+      document.getElementById('offers-grid').innerHTML =
+        `<div class="empty-state"><p class="text-danger">${err.message}</p></div>`;
+    }
+  }
+
+  /* ── Tri ── */
+  function applySort() {
+    const sort = document.getElementById('sort-select').value;
+    filtered = [...allOffers];
+    if (sort === 'date_asc')     filtered.sort((a,b) => a.created_at.localeCompare(b.created_at));
+    if (sort === 'date_desc')    filtered.sort((a,b) => b.created_at.localeCompare(a.created_at));
+    if (sort === 'salaire_desc') filtered.sort((a,b) => (b.salaire_max||0) - (a.salaire_max||0));
+    if (sort === 'salaire_asc')  filtered.sort((a,b) => (a.salaire_min||0) - (b.salaire_min||0));
+    currentPage = 1;
+    renderOffers();
+  }
+
+  /* ── Afficher la grille ── */
+  function renderOffers() {
+    const grid   = document.getElementById('offers-grid');
+    const count  = document.getElementById('offers-count');
+    const pagCont = document.getElementById('pagination-container');
+
+    count.textContent = `${filtered.length} offre${filtered.length !== 1 ? 's' : ''} trouvée${filtered.length !== 1 ? 's' : ''}`;
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-state-icon">🔍</div>
+          <h3>Aucune offre trouvée</h3>
+          <p>Modifiez vos critères de recherche.</p>
+        </div>`;
+      pagCont.innerHTML = '';
+      return;
+    }
+
+    const total = Math.ceil(filtered.length / PER_PAGE);
+    const page  = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+    grid.innerHTML = page.map(o => `
+      <div class="offer-card" onclick="openDetail(${o.id})">
+        <div class="offer-card-header">
+          <div>
+            <div class="offer-card-title">${escHtml(o.titre)}</div>
+            <div class="offer-card-org">${escHtml(o.organisation)}</div>
+          </div>
+          <span class="badge badge-primary">${escHtml(o.statut_poste)}</span>
+        </div>
+        <div class="offer-card-meta">
+          <span>📍 ${escHtml(o.lieu)}</span>
+          <span>💼 ${escHtml(o.type_metier)}</span>
+          ${o.rythme ? `<span>⏱ ${escHtml(o.rythme)}</span>` : ''}
+        </div>
+        <div class="offer-card-salary">${formatSalaire(o.salaire_min, o.salaire_max)}</div>
+        <div class="offer-card-footer">
+          <span class="offer-card-date">Publiée le ${formatDate(o.created_at)}</span>
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDetail(${o.id})">Voir l'offre</button>
+        </div>
+      </div>`).join('');
+
+    pagCont.innerHTML = '';
+    pagCont.appendChild(renderPagination(currentPage, total, p => { currentPage = p; renderOffers(); window.scrollTo(0, 0); }));
+  }
+
+  /* ── Ouvrir le détail ── */
+  async function openDetail(id) {
+    currentOffer = filtered.find(o => o.id === id) || allOffers.find(o => o.id === id);
+    if (!currentOffer) return;
+    const o = currentOffer;
+
+    document.getElementById('detail-titre').textContent = o.titre;
+    document.getElementById('detail-body').innerHTML = `
+      <div class="offer-detail-meta">
+        <span class="badge badge-primary">${escHtml(o.statut_poste)}</span>
+        <span class="chip">💼 ${escHtml(o.type_metier)}</span>
+        <span class="chip">📍 ${escHtml(o.lieu)}</span>
+        ${o.rythme ? `<span class="chip">⏱ ${escHtml(o.rythme)}</span>` : ''}
+      </div>
+      <div class="offer-detail-section">
+        <h4>Entreprise</h4>
+        <p>${escHtml(o.organisation)}</p>
+      </div>
+      <div class="offer-detail-section">
+        <h4>Rémunération</h4>
+        <p class="offer-card-salary">${formatSalaire(o.salaire_min, o.salaire_max)}</p>
+      </div>
+      ${o.description ? `<div class="offer-detail-section"><h4>Description du poste</h4><p>${escHtml(o.description)}</p></div>` : ''}
+      ${o.pieces_demandees ? `<div class="offer-detail-section"><h4>Pièces demandées (${o.nb_pieces})</h4><p>${escHtml(o.pieces_demandees)}</p></div>` : ''}
+      <div class="offer-detail-section">
+        <h4>Date limite de candidature</h4>
+        <p>${o.date_validite ? formatDate(o.date_validite) : 'Non précisée'}</p>
+      </div>
+    `;
+
+    const btnP = document.getElementById('btn-postuler');
+    const user  = Auth.getUser();
+    if (user?.role === 'candidat') {
+      btnP.style.display = 'inline-flex';
+      btnP.onclick = () => openApply(o);
+    } else if (!Auth.isLoggedIn()) {
+      btnP.style.display = 'inline-flex';
+      btnP.textContent = 'Connexion pour postuler';
+      btnP.onclick = () => window.location.href = '/index.html';
+    } else {
+      btnP.style.display = 'none';
+    }
+
+    showModal('modal-detail-overlay');
+  }
+
+  /* ── Ouvrir modal candidature ── */
+  function openApply(o) {
+    clearAlert('apply-alert');
+    document.getElementById('apply-offre-titre').textContent = o.titre;
+    document.getElementById('apply-pieces').textContent = o.pieces_demandees || 'Aucune pièce spécifiée';
+    document.getElementById('btn-apply-confirm').dataset.offreId = o.id;
+    hideModal('modal-detail-overlay');
+    showModal('modal-apply-overlay');
+  }
+
+  /* ── Confirmer candidature ── */
+  document.getElementById('btn-apply-confirm').addEventListener('click', async function() {
+    const offre_id = Number(this.dataset.offreId);
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner"></span> Envoi…';
+    try {
+      await API.post('/api/candidatures', { offre_id }, true);
+      hideModal('modal-apply-overlay');
+      showAlert('page-alert', 'Votre candidature a bien été enregistrée !', 'success');
+    } catch(err) {
+      showAlert('apply-alert', err.message, 'danger');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Confirmer ma candidature';
+    }
+  });
+
+  /* ── Events ── */
+  document.getElementById('btn-search').addEventListener('click', loadOffers);
+  document.getElementById('sort-select').addEventListener('change', applySort);
+  ['s-titre','s-lieu'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') loadOffers(); });
+  });
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadOffers();
+</script>
+</body>
+</html>

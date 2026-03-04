@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – Devenir Recruteur</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div id="navbar-container"></div>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h1>Devenir Recruteur</h1>
+    <p>Rejoignez une organisation existante ou créez la vôtre pour publier des offres d'emploi</p>
+  </div>
+
+  <!-- Alerte globale -->
+  <div id="page-alert"></div>
+
+  <!-- Si déjà recruteur -->
+  <div id="already-recruiter" class="hidden">
+    <div class="alert alert-success">
+      <span class="alert-icon">✓</span>
+      <div>
+        <strong>Vous êtes déjà recruteur !</strong>
+        Vous pouvez accéder à votre espace recruteur pour gérer vos offres.
+        <br><a href="/pages/recruteur.html" class="btn btn-success btn-sm mt-2">Aller à mon espace recruteur</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulaire principal -->
+  <div id="main-content">
+
+    <!-- Onglets -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="rejoindre">Rejoindre une organisation</button>
+      <button class="tab-btn"        data-tab="creer">Créer une organisation</button>
+    </div>
+
+    <!-- ── Rejoindre ── -->
+    <div class="tab-panel active" id="tab-rejoindre">
+      <div class="card">
+        <div class="card-header">
+          <h3>Demander à rejoindre une organisation</h3>
+        </div>
+        <p class="text-muted mb-4">
+          Sélectionnez une organisation déjà validée sur la plateforme et soumettez une demande.
+          Un administrateur examinera votre demande et vous attribuera le rôle de recruteur si elle est acceptée.
+        </p>
+
+        <div id="rejoindre-alert"></div>
+
+        <!-- Mes demandes en attente -->
+        <div id="mes-demandes-section">
+          <div class="section-title">Mes demandes</div>
+          <div id="mes-demandes">
+            <div class="loading-wrapper"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <form id="form-rejoindre" novalidate>
+          <div class="form-group">
+            <label for="select-org">Organisation <span style="color:var(--danger)">*</span></label>
+            <select id="select-org" class="form-control" required>
+              <option value="">-- Choisir une organisation validée --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="rejoindre-message">Message (facultatif)</label>
+            <textarea id="rejoindre-message" class="form-control" rows="3"
+                      placeholder="Présentez-vous brièvement, indiquez votre poste dans l'organisation…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-rejoindre">Envoyer la demande</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Créer ── -->
+    <div class="tab-panel" id="tab-creer">
+      <div class="card">
+        <div class="card-header">
+          <h3>Créer une nouvelle organisation</h3>
+        </div>
+        <p class="text-muted mb-4">
+          Enregistrez votre entreprise sur la plateforme. Elle sera soumise à validation par un administrateur.
+          Une fois validée, vous obtiendrez automatiquement le rôle de recruteur.
+        </p>
+
+        <div id="creer-alert"></div>
+
+        <form id="form-creer" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="creer-siren">Numéro SIREN <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="creer-siren" class="form-control"
+                     placeholder="123456789" maxlength="9" pattern="\d{9}" required />
+              <span class="form-hint">9 chiffres, sans espaces</span>
+            </div>
+            <div class="form-group">
+              <label for="creer-type">Type de structure <span style="color:var(--danger)">*</span></label>
+              <select id="creer-type" class="form-control" required>
+                <option value="">-- Choisir --</option>
+                <option>SAS</option>
+                <option>SASU</option>
+                <option>SARL</option>
+                <option>Sarl</option>
+                <option>SA</option>
+                <option>SNC</option>
+                <option>Association</option>
+                <option>Auto-entrepreneur</option>
+                <option>Autre</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="creer-nom">Nom de l'organisation <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="creer-nom" class="form-control"
+                   placeholder="TechCorp SAS" required />
+          </div>
+          <div class="form-group">
+            <label for="creer-adresse">Adresse du siège social <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="creer-adresse" class="form-control"
+                   placeholder="10 rue de la Paix, 75001 Paris" required />
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-creer">Soumettre la demande</button>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /#main-content -->
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  Auth.requireAuth();
+  renderNavbar('navbar-container');
+
+  const user = Auth.getUser();
+
+  // Si déjà recruteur ou admin, afficher message
+  if (user?.role === 'recruteur' || user?.role === 'admin') {
+    document.getElementById('already-recruiter').classList.remove('hidden');
+    document.getElementById('main-content').classList.add('hidden');
+  } else {
+    loadOrgs();
+    loadMesDemandes();
+  }
+
+  /* ── Onglets ── */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ── Charger organisations validées ── */
+  async function loadOrgs() {
+    try {
+      const orgs = await API.get('/api/organisations');
+      const sel  = document.getElementById('select-org');
+      if (!orgs.length) {
+        sel.innerHTML = '<option value="">Aucune organisation disponible</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">-- Choisir une organisation validée --</option>' +
+        orgs.map(o => `<option value="${o.id}">${escHtml(o.nom)} (${escHtml(o.type)}) – ${escHtml(o.siren)}</option>`).join('');
+    } catch(err) {
+      showAlert('rejoindre-alert', err.message, 'danger');
+    }
+  }
+
+  /* ── Charger mes demandes ── */
+  async function loadMesDemandes() {
+    try {
+      const demandes = await API.get('/api/demandes', true);
+      const el = document.getElementById('mes-demandes');
+      if (!demandes.length) {
+        el.innerHTML = '<p class="text-muted text-sm">Aucune demande en cours.</p>';
+        return;
+      }
+      el.innerHTML = `
+        <div class="table-wrapper" style="margin-bottom:.75rem">
+          <table>
+            <thead><tr><th>Organisation</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              ${demandes.map(d => `
+                <tr>
+                  <td class="font-medium">${escHtml(d.org_id)}</td>
+                  <td>${formatDate(d.date)}</td>
+                  <td>${statutOrgBadge(d.statut)}</td>
+                  <td>
+                    ${d.statut === 'en_attente'
+                      ? `<button class="btn btn-outline-danger btn-sm" onclick="cancelDemande(${d.id})">Annuler</button>`
+                      : ''}
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch(err) {
+      document.getElementById('mes-demandes').innerHTML = '<p class="text-muted text-sm">Impossible de charger les demandes.</p>';
+    }
+  }
+
+  async function cancelDemande(id) {
+    if (!confirm('Annuler cette demande ?')) return;
+    try {
+      await API.del('/api/demandes/' + id, true);
+      showAlert('rejoindre-alert', 'Demande annulée.', 'success');
+      await loadMesDemandes();
+    } catch(err) {
+      showAlert('rejoindre-alert', err.message, 'danger');
+    }
+  }
+
+  /* ── Rejoindre org ── */
+  document.getElementById('form-rejoindre').addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('rejoindre-alert');
+    const org_id  = document.getElementById('select-org').value;
+    const message = document.getElementById('rejoindre-message').value.trim();
+    if (!org_id) { showAlert('rejoindre-alert', 'Veuillez sélectionner une organisation.', 'warning'); return; }
+    const btn = document.getElementById('btn-rejoindre');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Envoi…';
+    try {
+      await API.post('/api/demandes', { org_id: Number(org_id), message: message || null }, true);
+      showAlert('rejoindre-alert', 'Votre demande a bien été soumise. Un administrateur va l\'examiner.', 'success');
+      document.getElementById('form-rejoindre').reset();
+      await loadMesDemandes();
+    } catch(err) {
+      showAlert('rejoindre-alert', err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Envoyer la demande';
+    }
+  });
+
+  /* ── Créer org ── */
+  document.getElementById('form-creer').addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('creer-alert');
+    const siren   = document.getElementById('creer-siren').value.trim();
+    const nom     = document.getElementById('creer-nom').value.trim();
+    const type    = document.getElementById('creer-type').value;
+    const adresse = document.getElementById('creer-adresse').value.trim();
+    if (!siren || !nom || !type || !adresse) {
+      showAlert('creer-alert', 'Tous les champs obligatoires doivent être remplis.', 'warning'); return;
+    }
+    if (!/^\d{9}$/.test(siren)) {
+      showAlert('creer-alert', 'Le SIREN doit contenir exactement 9 chiffres.', 'warning'); return;
+    }
+    const btn = document.getElementById('btn-creer');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Soumission…';
+    try {
+      await API.post('/api/organisations', { siren, nom, type, adresse }, true);
+      showAlert('creer-alert',
+        'Organisation soumise avec succès ! Elle est en attente de validation par un administrateur. Vous serez notifié lors de la validation.',
+        'success');
+      document.getElementById('form-creer').reset();
+    } catch(err) {
+      showAlert('creer-alert', err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Soumettre la demande';
+    }
+  });
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

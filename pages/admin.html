@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – Administration</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div id="navbar-container"></div>
+
+<div class="page-wrapper">
+  <div class="page-header">
+    <h1>Tableau de bord Administration</h1>
+    <p>Gestion complète de la plateforme SR10</p>
+  </div>
+
+  <!-- Stats globales -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-users">—</div>
+      <div class="stat-card-label">Utilisateurs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-users-actifs">—</div>
+      <div class="stat-card-label">Actifs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-orgs-val">—</div>
+      <div class="stat-card-label">Orgs validées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-orgs-att">—</div>
+      <div class="stat-card-label">Orgs en attente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-offres">—</div>
+      <div class="stat-card-label">Offres publiées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="s-cands">—</div>
+      <div class="stat-card-label">Candidatures</div>
+    </div>
+  </div>
+
+  <!-- Onglets principaux -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="users">Utilisateurs</button>
+    <button class="tab-btn" data-tab="orgs">Organisations</button>
+    <button class="tab-btn" data-tab="demandes">Demandes recruteur</button>
+    <button class="tab-btn" data-tab="offres">Toutes les offres</button>
+  </div>
+
+  <!-- Alerte -->
+  <div id="page-alert"></div>
+
+  <!-- ── Utilisateurs ── -->
+  <div class="tab-panel active" id="tab-users">
+    <div class="card" style="padding:1rem 1.25rem 1rem;margin-bottom:.75rem">
+      <div class="d-flex gap-2 align-center">
+        <input type="text" id="user-search" class="form-control" placeholder="Rechercher par nom, prénom, email…" style="max-width:360px" />
+        <button class="btn btn-primary btn-sm" id="btn-user-search">Rechercher</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Inscrit le</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="6" class="text-center" style="padding:2rem"><div class="spinner" style="margin:0 auto"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Organisations ── -->
+  <div class="tab-panel" id="tab-orgs">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>SIREN</th>
+              <th>Type</th>
+              <th>Adresse</th>
+              <th>Statut</th>
+              <th>Créée le</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orgs-tbody">
+            <tr><td colspan="7" class="text-center" style="padding:2rem"><div class="spinner" style="margin:0 auto"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Demandes recruteur ── -->
+  <div class="tab-panel" id="tab-demandes">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Demandeur</th>
+              <th>Email</th>
+              <th>Organisation</th>
+              <th>Message</th>
+              <th>Date</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="demandes-tbody">
+            <tr><td colspan="7" class="text-center" style="padding:2rem"><div class="spinner" style="margin:0 auto"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toutes les offres ── -->
+  <div class="tab-panel" id="tab-offres">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Titre</th>
+              <th>Organisation</th>
+              <th>Domaine</th>
+              <th>Lieu</th>
+              <th>État</th>
+              <th>Créée le</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="offres-tbody">
+            <tr><td colspan="7" class="text-center" style="padding:2rem"><div class="spinner" style="margin:0 auto"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Modal Modifier rôle utilisateur ══ -->
+<div class="modal-overlay" id="modal-user-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Modifier l'utilisateur</h3>
+      <button class="modal-close" onclick="hideModal('modal-user-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="user-modal-alert"></div>
+      <input type="hidden" id="edit-user-id" />
+      <p class="font-medium mb-4" id="edit-user-name">—</p>
+      <div class="form-group">
+        <label for="edit-user-role">Rôle</label>
+        <select id="edit-user-role" class="form-control">
+          <option value="candidat">Candidat</option>
+          <option value="recruteur">Recruteur</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-user-actif">Statut du compte</label>
+        <select id="edit-user-actif" class="form-control">
+          <option value="1">Actif</option>
+          <option value="0">Désactivé</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-user-overlay')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-user">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Statut organisation ══ -->
+<div class="modal-overlay" id="modal-org-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Modifier le statut</h3>
+      <button class="modal-close" onclick="hideModal('modal-org-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="org-modal-alert"></div>
+      <input type="hidden" id="edit-org-id" />
+      <p class="font-medium mb-4" id="edit-org-name">—</p>
+      <div class="form-group">
+        <label for="edit-org-statut">Statut</label>
+        <select id="edit-org-statut" class="form-control">
+          <option value="en_attente">En attente</option>
+          <option value="validee">Validée</option>
+          <option value="refusee">Refusée</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-org-overlay')">Annuler</button>
+      <button class="btn btn-success" id="btn-save-org-statut">Valider</button>
+      <button class="btn btn-danger"  id="btn-refuse-org-statut">Refuser</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  Auth.requireAuth('admin');
+  renderNavbar('navbar-container');
+
+  let allUsers  = [];
+  let allOrgs   = [];
+  let allDemandes = [];
+  let allOffres   = [];
+
+  /* ── Onglets ── */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      loadSection(btn.dataset.tab);
+    });
+  });
+
+  /* ── Chargement initial ── */
+  async function init() {
+    await Promise.all([loadStats(), loadSection('users')]);
+  }
+
+  async function loadStats() {
+    try {
+      const s = await API.get('/api/stats', true);
+      document.getElementById('s-users').textContent       = s.users;
+      document.getElementById('s-users-actifs').textContent = s.users_actifs;
+      document.getElementById('s-orgs-val').textContent    = s.orgs_validees;
+      document.getElementById('s-orgs-att').textContent    = s.orgs_attente;
+      document.getElementById('s-offres').textContent      = s.offres;
+      document.getElementById('s-cands').textContent       = s.candidatures;
+    } catch {}
+  }
+
+  async function loadSection(tab) {
+    if (tab === 'users')    await loadUsers();
+    if (tab === 'orgs')     await loadOrgs();
+    if (tab === 'demandes') await loadDemandes();
+    if (tab === 'offres')   await loadOffres();
+  }
+
+  /* ── Utilisateurs ── */
+  async function loadUsers(search = '') {
+    try {
+      const q = search ? '?search=' + encodeURIComponent(search) : '';
+      allUsers = await API.get('/api/users' + q, true);
+      renderUsers();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    if (!allUsers.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h3>Aucun utilisateur</h3></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = allUsers.map(u => `
+      <tr>
+        <td class="font-medium">${escHtml(u.prenom)} ${escHtml(u.nom)}</td>
+        <td>${escHtml(u.email)}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td>
+          ${u.actif
+            ? '<span class="badge badge-success">Actif</span>'
+            : '<span class="badge badge-danger">Désactivé</span>'}
+        </td>
+        <td>${formatDate(u.created_at)}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openEditUser(${u.id})">Modifier</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('btn-user-search').addEventListener('click', () => {
+    loadUsers(document.getElementById('user-search').value.trim());
+  });
+  document.getElementById('user-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadUsers(document.getElementById('user-search').value.trim());
+  });
+
+  function openEditUser(id) {
+    const u = allUsers.find(x => x.id === id);
+    if (!u) return;
+    clearAlert('user-modal-alert');
+    document.getElementById('edit-user-id').value       = u.id;
+    document.getElementById('edit-user-name').textContent = `${u.prenom} ${u.nom} (${u.email})`;
+    document.getElementById('edit-user-role').value     = u.role;
+    document.getElementById('edit-user-actif').value    = u.actif ? '1' : '0';
+    showModal('modal-user-overlay');
+  }
+
+  document.getElementById('btn-save-user').addEventListener('click', async function() {
+    const id    = document.getElementById('edit-user-id').value;
+    const role  = document.getElementById('edit-user-role').value;
+    const actif = document.getElementById('edit-user-actif').value === '1';
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner"></span>';
+    try {
+      await API.put('/api/users/' + id, { role, actif }, true);
+      hideModal('modal-user-overlay');
+      showAlert('page-alert', 'Utilisateur mis à jour.', 'success');
+      await loadUsers();
+      await loadStats();
+    } catch(err) {
+      showAlert('user-modal-alert', err.message, 'danger');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Enregistrer';
+    }
+  });
+
+  /* ── Organisations ── */
+  async function loadOrgs() {
+    try {
+      allOrgs = await API.get('/api/organisations/toutes', true);
+      renderOrgs();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  function renderOrgs() {
+    const tbody = document.getElementById('orgs-tbody');
+    if (!allOrgs.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>Aucune organisation</h3></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = allOrgs.map(o => `
+      <tr>
+        <td class="font-medium">${escHtml(o.nom)}</td>
+        <td><code>${escHtml(o.siren)}</code></td>
+        <td>${escHtml(o.type)}</td>
+        <td class="truncate" style="max-width:180px" title="${escHtml(o.adresse)}">${escHtml(o.adresse)}</td>
+        <td>${statutOrgBadge(o.statut)}</td>
+        <td>${formatDate(o.created_at)}</td>
+        <td>
+          ${o.statut === 'en_attente' ? `
+            <button class="btn btn-success btn-sm" onclick="updateOrgStatut(${o.id},'validee')">Valider</button>
+            <button class="btn btn-danger btn-sm" onclick="updateOrgStatut(${o.id},'refusee')">Refuser</button>
+          ` : `<span class="text-muted text-xs">—</span>`}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function updateOrgStatut(id, statut) {
+    try {
+      await API.put('/api/organisations/' + id + '/statut', { statut }, true);
+      showAlert('page-alert', `Organisation ${statut === 'validee' ? 'validée' : 'refusée'}.`, 'success');
+      await loadOrgs();
+      await loadStats();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  /* ── Demandes recruteur ── */
+  async function loadDemandes() {
+    try {
+      allDemandes = await API.get('/api/demandes', true);
+      renderDemandes();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  function renderDemandes() {
+    const tbody = document.getElementById('demandes-tbody');
+    if (!allDemandes.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>Aucune demande</h3></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = allDemandes.map(d => `
+      <tr>
+        <td class="font-medium">${escHtml(d.prenom)} ${escHtml(d.nom)}</td>
+        <td>${escHtml(d.email)}</td>
+        <td>${escHtml(d.org_nom)}</td>
+        <td class="text-sm" style="max-width:200px">${escHtml(d.message || '—')}</td>
+        <td>${formatDate(d.date)}</td>
+        <td>${statutOrgBadge(d.statut)}</td>
+        <td>
+          ${d.statut === 'en_attente' ? `
+            <button class="btn btn-success btn-sm" onclick="updateDemandeStatut(${d.id},'validee')">Valider</button>
+            <button class="btn btn-danger btn-sm"  onclick="updateDemandeStatut(${d.id},'refusee')">Refuser</button>
+          ` : `<span class="text-muted text-xs">—</span>`}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function updateDemandeStatut(id, statut) {
+    try {
+      await API.put('/api/demandes/' + id + '/statut', { statut }, true);
+      showAlert('page-alert', `Demande ${statut === 'validee' ? 'validée' : 'refusée'}.`, 'success');
+      await loadDemandes();
+      await loadStats();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  /* ── Toutes les offres ── */
+  async function loadOffres() {
+    try {
+      allOffres = await API.get('/api/offres/all', true);
+      renderOffres();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  function renderOffres() {
+    const tbody = document.getElementById('offres-tbody');
+    if (!allOffres.length) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>Aucune offre</h3></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = allOffres.map(o => `
+      <tr>
+        <td class="font-medium">${escHtml(o.titre)}</td>
+        <td>${escHtml(o.organisation)}</td>
+        <td>${escHtml(o.type_metier)}</td>
+        <td>${escHtml(o.lieu)}</td>
+        <td>${etatOffreBadge(o.etat)}</td>
+        <td>${formatDate(o.created_at)}</td>
+        <td>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteOffre(${o.id})">Supprimer</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function deleteOffre(id) {
+    if (!confirm('Supprimer définitivement cette offre ?')) return;
+    try {
+      await API.del('/api/offres/' + id, true);
+      showAlert('page-alert', 'Offre supprimée.', 'success');
+      allOffres = allOffres.filter(o => o.id !== id);
+      renderOffres();
+      await loadStats();
+    } catch(err) { showAlert('page-alert', err.message, 'danger'); }
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  init();
+</script>
+</body>
+</html>

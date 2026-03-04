@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – Espace Recruteur</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div id="navbar-container"></div>
+
+<div class="page-wrapper">
+  <div class="page-header page-header-row">
+    <div>
+      <h1>Espace Recruteur</h1>
+      <p id="recruiter-subtitle">Gérez vos offres et suivez vos candidatures</p>
+    </div>
+    <button class="btn btn-primary" id="btn-new-offer">+ Nouvelle offre</button>
+  </div>
+
+  <!-- Stats rapides -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-total">—</div>
+      <div class="stat-card-label">Total offres</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-publiees">—</div>
+      <div class="stat-card-label">Publiées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-brouillons">—</div>
+      <div class="stat-card-label">Non publiées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-candidatures">—</div>
+      <div class="stat-card-label">Candidatures reçues</div>
+    </div>
+  </div>
+
+  <!-- Onglets -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-tab="publiees">Offres publiées</button>
+    <button class="tab-btn"        data-tab="autres">Autres offres</button>
+  </div>
+
+  <!-- Alerte -->
+  <div id="page-alert"></div>
+
+  <!-- ── Offres publiées ── -->
+  <div class="tab-panel active" id="tab-publiees">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="list-publiees">
+        <div class="loading-wrapper"><div class="spinner"></div> Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Autres offres ── -->
+  <div class="tab-panel" id="tab-autres">
+    <div class="card" style="padding:0;overflow:hidden">
+      <div id="list-autres">
+        <div class="loading-wrapper"><div class="spinner"></div> Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Modal Offre (créer/modifier) ══ -->
+<div class="modal-overlay" id="modal-offre-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="offre-modal-title">Nouvelle offre</h3>
+      <button class="modal-close" onclick="hideModal('modal-offre-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="offre-modal-alert"></div>
+      <form id="offre-form" novalidate>
+        <input type="hidden" id="offre-id" value="" />
+        <div class="form-group">
+          <label for="offre-titre">Titre du poste <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="offre-titre" class="form-control" placeholder="Développeur Full-Stack" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offre-statut-poste">Statut du poste</label>
+            <select id="offre-statut-poste" class="form-control">
+              <option>Cadre</option>
+              <option>ETAM</option>
+              <option>Ouvrier</option>
+              <option>Employé</option>
+              <option>Alternant</option>
+              <option>Stage</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="offre-type-metier">Domaine <span style="color:var(--danger)">*</span></label>
+            <select id="offre-type-metier" class="form-control" required>
+              <option value="">-- Choisir --</option>
+              <option>Informatique</option>
+              <option>Cybersécurité</option>
+              <option>Marketing</option>
+              <option>Finance</option>
+              <option>RH</option>
+              <option>Commercial</option>
+              <option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offre-lieu">Lieu <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="offre-lieu" class="form-control" placeholder="Paris (75)" required />
+          </div>
+          <div class="form-group">
+            <label for="offre-rythme">Rythme de travail</label>
+            <input type="text" id="offre-rythme" class="form-control" placeholder="35h/semaine, télétravail 2j" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offre-salaire-min">Salaire min (€/an)</label>
+            <input type="number" id="offre-salaire-min" class="form-control" placeholder="40000" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="offre-salaire-max">Salaire max (€/an)</label>
+            <input type="number" id="offre-salaire-max" class="form-control" placeholder="55000" min="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="offre-description">Description du poste</label>
+          <textarea id="offre-description" class="form-control" rows="4" placeholder="Décrivez le poste, les missions, le profil recherché…"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offre-pieces">Pièces demandées</label>
+            <input type="text" id="offre-pieces" class="form-control" placeholder="CV, lettre de motivation…" />
+          </div>
+          <div class="form-group">
+            <label for="offre-nb-pieces">Nombre de pièces</label>
+            <input type="number" id="offre-nb-pieces" class="form-control" value="1" min="1" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="offre-etat">État de l'offre</label>
+            <select id="offre-etat" class="form-control">
+              <option value="non_publiee">Non publiée (brouillon)</option>
+              <option value="publiee">Publiée</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="offre-date-validite">Date limite de candidature</label>
+            <input type="date" id="offre-date-validite" class="form-control" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-offre-overlay')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-offre">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Candidatures ══ -->
+<div class="modal-overlay" id="modal-cands-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="cands-modal-title">Candidatures</h3>
+      <button class="modal-close" onclick="hideModal('modal-cands-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cands-modal-alert"></div>
+      <div id="cands-list">
+        <div class="loading-wrapper"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-cands-overlay')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Supprimer offre ══ -->
+<div class="modal-overlay" id="modal-delete-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Supprimer l'offre</h3>
+      <button class="modal-close" onclick="hideModal('modal-delete-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="delete-alert"></div>
+      <p>Êtes-vous sûr de vouloir supprimer définitivement l'offre :</p>
+      <p class="font-bold" id="delete-offre-titre">—</p>
+      <p class="text-sm text-muted">Les candidatures associées seront également supprimées.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-delete-overlay')">Annuler</button>
+      <button class="btn btn-danger" id="btn-delete-confirm">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  Auth.requireAuth(['recruteur', 'admin']);
+  renderNavbar('navbar-container');
+
+  const user = Auth.getUser();
+  document.getElementById('recruiter-subtitle').textContent =
+    `Bonjour ${user.prenom} ${user.nom} — gérez vos offres`;
+
+  let offers      = [];
+  let deleteId    = null;
+
+  /* ── Onglets ── */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ── Charger les offres ── */
+  async function load() {
+    try {
+      offers = await API.get('/api/offres/mes', true);
+      updateStats();
+      renderLists();
+    } catch(err) {
+      showAlert('page-alert', err.message, 'danger');
+    }
+  }
+
+  function updateStats() {
+    const publiees  = offers.filter(o => o.etat === 'publiee').length;
+    const brouillons = offers.filter(o => o.etat !== 'publiee').length;
+    document.getElementById('stat-total').textContent    = offers.length;
+    document.getElementById('stat-publiees').textContent = publiees;
+    document.getElementById('stat-brouillons').textContent = brouillons;
+    document.getElementById('stat-candidatures').textContent = '—';
+  }
+
+  function renderLists() {
+    const publiees = offers.filter(o => o.etat === 'publiee');
+    const autres   = offers.filter(o => o.etat !== 'publiee');
+    renderList('list-publiees', publiees, 'Aucune offre publiée');
+    renderList('list-autres',   autres,   'Aucune offre en brouillon');
+  }
+
+  function renderList(containerId, list, emptyMsg) {
+    const el = document.getElementById(containerId);
+    if (!list.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><h3>${emptyMsg}</h3></div>`;
+      return;
+    }
+    el.innerHTML = list.map(o => `
+      <div class="offers-list-item">
+        <div class="offers-list-info">
+          <div class="offers-list-title">${escHtml(o.titre)}</div>
+          <div class="offers-list-sub">
+            ${escHtml(o.type_metier)} · ${escHtml(o.lieu)} · ${formatSalaire(o.salaire_min, o.salaire_max)}
+            ${o.date_validite ? ` · Expire le ${formatDate(o.date_validite)}` : ''}
+          </div>
+        </div>
+        <div class="d-flex gap-2 align-center">
+          ${etatOffreBadge(o.etat)}
+          <button class="btn btn-outline-primary btn-sm" onclick="openCandidatures(${o.id}, '${escHtml(o.titre).replace(/'/g,"\\'")}')">
+            Candidatures
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openEdit(${o.id})">Modifier</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="openDelete(${o.id}, '${escHtml(o.titre).replace(/'/g,"\\'")}')">Supprimer</button>
+        </div>
+      </div>`).join('');
+  }
+
+  /* ── Nouvelle offre ── */
+  document.getElementById('btn-new-offer').addEventListener('click', () => {
+    document.getElementById('offre-modal-title').textContent = 'Nouvelle offre';
+    document.getElementById('offre-form').reset();
+    document.getElementById('offre-id').value = '';
+    clearAlert('offre-modal-alert');
+    showModal('modal-offre-overlay');
+  });
+
+  /* ── Modifier offre ── */
+  function openEdit(id) {
+    const o = offers.find(x => x.id === id);
+    if (!o) return;
+    document.getElementById('offre-modal-title').textContent = 'Modifier l\'offre';
+    document.getElementById('offre-id').value          = o.id;
+    document.getElementById('offre-titre').value       = o.titre;
+    document.getElementById('offre-statut-poste').value = o.statut_poste;
+    document.getElementById('offre-type-metier').value  = o.type_metier;
+    document.getElementById('offre-lieu').value         = o.lieu;
+    document.getElementById('offre-rythme').value       = o.rythme || '';
+    document.getElementById('offre-salaire-min').value  = o.salaire_min || '';
+    document.getElementById('offre-salaire-max').value  = o.salaire_max || '';
+    document.getElementById('offre-description').value  = o.description || '';
+    document.getElementById('offre-pieces').value       = o.pieces_demandees || '';
+    document.getElementById('offre-nb-pieces').value    = o.nb_pieces || 1;
+    document.getElementById('offre-etat').value         = o.etat;
+    document.getElementById('offre-date-validite').value = o.date_validite || '';
+    clearAlert('offre-modal-alert');
+    showModal('modal-offre-overlay');
+  }
+
+  /* ── Sauvegarder offre ── */
+  document.getElementById('btn-save-offre').addEventListener('click', async function() {
+    clearAlert('offre-modal-alert');
+    const id = document.getElementById('offre-id').value;
+    const body = {
+      titre:           document.getElementById('offre-titre').value.trim(),
+      statut_poste:    document.getElementById('offre-statut-poste').value,
+      type_metier:     document.getElementById('offre-type-metier').value,
+      lieu:            document.getElementById('offre-lieu').value.trim(),
+      rythme:          document.getElementById('offre-rythme').value.trim() || null,
+      salaire_min:     Number(document.getElementById('offre-salaire-min').value) || 0,
+      salaire_max:     Number(document.getElementById('offre-salaire-max').value) || 0,
+      description:     document.getElementById('offre-description').value.trim() || null,
+      pieces_demandees: document.getElementById('offre-pieces').value.trim() || null,
+      nb_pieces:       Number(document.getElementById('offre-nb-pieces').value) || 1,
+      etat:            document.getElementById('offre-etat').value,
+      date_validite:   document.getElementById('offre-date-validite').value || null,
+    };
+    if (!body.titre || !body.type_metier || !body.lieu) {
+      showAlert('offre-modal-alert', 'Titre, domaine et lieu sont obligatoires.', 'warning'); return;
+    }
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner"></span> Enregistrement…';
+    try {
+      if (id) {
+        await API.put('/api/offres/' + id, body, true);
+        showAlert('page-alert', 'Offre mise à jour avec succès.', 'success');
+      } else {
+        await API.post('/api/offres', body, true);
+        showAlert('page-alert', 'Offre créée avec succès.', 'success');
+      }
+      hideModal('modal-offre-overlay');
+      await load();
+    } catch(err) {
+      showAlert('offre-modal-alert', err.message, 'danger');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Enregistrer';
+    }
+  });
+
+  /* ── Candidatures ── */
+  async function openCandidatures(offreId, titre) {
+    document.getElementById('cands-modal-title').textContent = `Candidatures – ${titre}`;
+    document.getElementById('cands-list').innerHTML = '<div class="loading-wrapper"><div class="spinner"></div></div>';
+    showModal('modal-cands-overlay');
+    try {
+      const cands = await API.get('/api/candidatures/offre/' + offreId, true);
+      if (!cands.length) {
+        document.getElementById('cands-list').innerHTML =
+          '<div class="empty-state"><div class="empty-state-icon">📭</div><h3>Aucune candidature</h3></div>';
+        return;
+      }
+      document.getElementById('cands-list').innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Candidat</th><th>Email</th><th>Téléphone</th><th>Date</th><th>Statut</th></tr></thead>
+            <tbody>
+              ${cands.map(c => `
+                <tr>
+                  <td class="font-medium">${escHtml(c.prenom)} ${escHtml(c.nom)}</td>
+                  <td>${escHtml(c.email)}</td>
+                  <td>${escHtml(c.telephone || '—')}</td>
+                  <td>${formatDate(c.date)}</td>
+                  <td>${statutCandidatureBadge(c.statut)}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      // update stat
+      document.getElementById('stat-candidatures').textContent = cands.length;
+    } catch(err) {
+      showAlert('cands-modal-alert', err.message, 'danger');
+    }
+  }
+
+  /* ── Supprimer ── */
+  function openDelete(id, titre) {
+    deleteId = id;
+    clearAlert('delete-alert');
+    document.getElementById('delete-offre-titre').textContent = titre;
+    showModal('modal-delete-overlay');
+  }
+
+  document.getElementById('btn-delete-confirm').addEventListener('click', async function() {
+    if (!deleteId) return;
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner"></span> Suppression…';
+    try {
+      await API.del('/api/offres/' + deleteId, true);
+      hideModal('modal-delete-overlay');
+      showAlert('page-alert', 'Offre supprimée.', 'success');
+      offers = offers.filter(o => o.id !== deleteId);
+      deleteId = null;
+      updateStats();
+      renderLists();
+    } catch(err) {
+      showAlert('delete-alert', err.message, 'danger');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Supprimer';
+    }
+  });
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  load();
+</script>
+</body>
+</html>

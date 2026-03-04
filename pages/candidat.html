@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – Mes candidatures</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div id="navbar-container"></div>
+
+<div class="page-wrapper">
+  <div class="page-header page-header-row">
+    <div>
+      <h1>Mes candidatures</h1>
+      <p id="page-subtitle">Suivez l'avancement de vos candidatures</p>
+    </div>
+    <a href="/pages/offres.html" class="btn btn-primary">Parcourir les offres</a>
+  </div>
+
+  <!-- Stats rapides -->
+  <div class="stats-grid" id="cand-stats">
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-total">—</div>
+      <div class="stat-card-label">Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-soumise">—</div>
+      <div class="stat-card-label">Soumises</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-en_cours">—</div>
+      <div class="stat-card-label">En cours</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-acceptee">—</div>
+      <div class="stat-card-label">Acceptées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-value" id="stat-refusee">—</div>
+      <div class="stat-card-label">Refusées</div>
+    </div>
+  </div>
+
+  <!-- Filtre par statut -->
+  <div class="tabs-bar" id="filter-tabs">
+    <button class="tab-btn active" data-filter="all">Toutes</button>
+    <button class="tab-btn" data-filter="soumise">Soumises</button>
+    <button class="tab-btn" data-filter="en_cours">En cours</button>
+    <button class="tab-btn" data-filter="acceptee">Acceptées</button>
+    <button class="tab-btn" data-filter="refusee">Refusées</button>
+  </div>
+
+  <!-- Alerte -->
+  <div id="page-alert"></div>
+
+  <!-- Tableau des candidatures -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="table-wrapper">
+      <table id="cand-table">
+        <thead>
+          <tr>
+            <th>Offre</th>
+            <th>Entreprise</th>
+            <th>Date de candidature</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="cand-tbody">
+          <tr>
+            <td colspan="5" class="text-center" style="padding:2rem">
+              <div class="spinner" style="margin:0 auto"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ Modal confirmation annulation ══ -->
+<div class="modal-overlay" id="modal-cancel-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Annuler la candidature</h3>
+      <button class="modal-close" onclick="hideModal('modal-cancel-overlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="cancel-alert"></div>
+      <p>Êtes-vous sûr de vouloir annuler votre candidature pour l'offre :</p>
+      <p class="font-bold" id="cancel-offre-titre">—</p>
+      <p class="text-sm text-muted">Cette action est irréversible.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-cancel-overlay')">Retour</button>
+      <button class="btn btn-danger" id="btn-cancel-confirm">Confirmer l'annulation</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  Auth.requireAuth('candidat');
+  renderNavbar('navbar-container');
+
+  let allCandidatures = [];
+  let currentFilter   = 'all';
+  let cancelId        = null;
+
+  /* ── Charger les candidatures ── */
+  async function load() {
+    try {
+      allCandidatures = await API.get('/api/candidatures/mes', true);
+      updateStats();
+      renderTable();
+    } catch(err) {
+      showAlert('page-alert', err.message, 'danger');
+    }
+  }
+
+  /* ── Stats ── */
+  function updateStats() {
+    const stats = { soumise: 0, en_cours: 0, acceptee: 0, refusee: 0 };
+    allCandidatures.forEach(c => { if (stats[c.statut] !== undefined) stats[c.statut]++; });
+    document.getElementById('stat-total').textContent    = allCandidatures.length;
+    document.getElementById('stat-soumise').textContent  = stats.soumise;
+    document.getElementById('stat-en_cours').textContent = stats.en_cours;
+    document.getElementById('stat-acceptee').textContent = stats.acceptee;
+    document.getElementById('stat-refusee').textContent  = stats.refusee;
+  }
+
+  /* ── Tableau ── */
+  function renderTable() {
+    const tbody = document.getElementById('cand-tbody');
+    const list  = currentFilter === 'all'
+      ? allCandidatures
+      : allCandidatures.filter(c => c.statut === currentFilter);
+
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="5">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <h3>Aucune candidature</h3>
+          <p>${currentFilter === 'all' ? 'Vous n\'avez pas encore postulé.' : 'Aucune candidature dans cette catégorie.'}</p>
+        </div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(c => `
+      <tr>
+        <td class="font-medium">${escHtml(c.offre_titre)}</td>
+        <td>${escHtml(c.organisation)}</td>
+        <td>${formatDate(c.date)}</td>
+        <td>${statutCandidatureBadge(c.statut)}</td>
+        <td>
+          ${c.statut === 'soumise' || c.statut === 'en_cours'
+            ? `<button class="btn btn-outline-danger btn-sm" onclick="openCancel(${c.id}, '${escHtml(c.offre_titre).replace(/'/g,"\\'")}')">Annuler</button>`
+            : '<span class="text-muted text-xs">—</span>'}
+        </td>
+      </tr>`).join('');
+  }
+
+  /* ── Filtre ── */
+  document.querySelectorAll('#filter-tabs .tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#filter-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderTable();
+    });
+  });
+
+  /* ── Annulation ── */
+  function openCancel(id, titre) {
+    cancelId = id;
+    clearAlert('cancel-alert');
+    document.getElementById('cancel-offre-titre').textContent = titre;
+    showModal('modal-cancel-overlay');
+  }
+
+  document.getElementById('btn-cancel-confirm').addEventListener('click', async function() {
+    if (!cancelId) return;
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner"></span> Annulation…';
+    try {
+      await API.del('/api/candidatures/' + cancelId, true);
+      hideModal('modal-cancel-overlay');
+      showAlert('page-alert', 'Candidature annulée avec succès.', 'success');
+      allCandidatures = allCandidatures.filter(c => c.id !== cancelId);
+      cancelId = null;
+      updateStats();
+      renderTable();
+    } catch(err) {
+      showAlert('cancel-alert', err.message, 'danger');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Confirmer l\'annulation';
+    }
+  });
+
+  function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  load();
+</script>
+</body>
+</html>

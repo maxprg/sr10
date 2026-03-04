@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SR10 – RecrutePro · Connexion</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <div class="auth-header">
+      <h1>SR10 RecrutePro</h1>
+      <p>Plateforme de recrutement</p>
+    </div>
+
+    <div class="auth-body">
+
+      <!-- Onglets Connexion / Inscription -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Connexion</button>
+        <button class="auth-tab"        data-tab="register">Créer un compte</button>
+      </div>
+
+      <!-- Alerte globale -->
+      <div id="auth-alert"></div>
+
+      <!-- ── Connexion ── -->
+      <div id="tab-login">
+        <!-- Comptes de démo -->
+        <div class="auth-demo">
+          <h4>Comptes de démo</h4>
+          <code>
+            admin@recrutepro.fr &nbsp;&nbsp;&nbsp;/ Admin@1234!<br>
+            recruteur@techcorp.fr / Recrut@1234!<br>
+            candidat@gmail.com &nbsp;&nbsp;/ Cand1dat@5678!
+          </code>
+        </div>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-email">Adresse e-mail</label>
+            <input type="email" id="login-email" class="form-control"
+                   placeholder="vous@exemple.fr" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Mot de passe</label>
+            <input type="password" id="login-password" class="form-control"
+                   placeholder="••••••••••••" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
+            Se connecter
+          </button>
+        </form>
+      </div>
+
+      <!-- ── Inscription ── -->
+      <div id="tab-register" class="hidden">
+        <form id="register-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-prenom">Prénom <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="reg-prenom" class="form-control"
+                     placeholder="Marie" required />
+            </div>
+            <div class="form-group">
+              <label for="reg-nom">Nom <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="reg-nom" class="form-control"
+                     placeholder="Dupont" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Adresse e-mail <span style="color:var(--danger)">*</span></label>
+            <input type="email" id="reg-email" class="form-control"
+                   placeholder="vous@exemple.fr" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label for="reg-telephone">Téléphone</label>
+            <input type="tel" id="reg-telephone" class="form-control"
+                   placeholder="06 12 34 56 78" />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Mot de passe <span style="color:var(--danger)">*</span></label>
+            <input type="password" id="reg-password" class="form-control"
+                   placeholder="••••••••••••" required autocomplete="new-password" />
+            <div class="pwd-strength"><div class="pwd-strength-bar" id="pwd-bar"></div></div>
+            <span class="form-hint" id="pwd-hint">12 caractères min., maj., min., chiffre, symbole</span>
+          </div>
+          <div class="form-group">
+            <label for="reg-password2">Confirmer le mot de passe <span style="color:var(--danger)">*</span></label>
+            <input type="password" id="reg-password2" class="form-control"
+                   placeholder="••••••••••••" required autocomplete="new-password" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="register-btn">
+            Créer mon compte
+          </button>
+          <p class="text-sm text-muted text-center mt-2">
+            Vous serez inscrit en tant que <strong>candidat</strong>. Vous pourrez demander à devenir recruteur après connexion.
+          </p>
+        </form>
+      </div>
+
+    </div><!-- /.auth-body -->
+  </div><!-- /.auth-card -->
+</div><!-- /.auth-wrapper -->
+
+<script src="/js/app.js"></script>
+<script>
+  // Redirect si déjà connecté
+  (function() {
+    if (Auth.isLoggedIn()) {
+      const u = Auth.getUser();
+      if (u?.role === 'admin')     window.location.href = '/pages/admin.html';
+      else if (u?.role === 'recruteur') window.location.href = '/pages/recruteur.html';
+      else window.location.href = '/pages/offres.html';
+    }
+  })();
+
+  /* ── Tabs ── */
+  document.querySelectorAll('.auth-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('tab-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('tab-register').classList.toggle('hidden', tab !== 'register');
+      clearAlert('auth-alert');
+    });
+  });
+
+  /* ── Password strength ── */
+  document.getElementById('reg-password').addEventListener('input', function() {
+    const score = passwordStrength(this.value);
+    const bar   = document.getElementById('pwd-bar');
+    const hint  = document.getElementById('pwd-hint');
+    const pct   = Math.round((score / 6) * 100);
+    bar.style.width = pct + '%';
+    const colors = ['#dc2626','#dc2626','#f59e0b','#f59e0b','#16a34a','#16a34a','#16a34a'];
+    bar.style.background = colors[score] || '#dc2626';
+    const labels = ['Très faible','Faible','Moyen','Moyen','Fort','Très fort','Excellent'];
+    hint.textContent = this.value ? labels[score] : '12 caractères min., maj., min., chiffre, symbole';
+  });
+
+  /* ── Login ── */
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('auth-alert');
+    const btn   = document.getElementById('login-btn');
+    const email = document.getElementById('login-email').value.trim();
+    const pwd   = document.getElementById('login-password').value;
+    if (!email || !pwd) { showAlert('auth-alert', 'Veuillez remplir tous les champs.'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Connexion…';
+    try {
+      const data = await API.post('/api/auth/login', { email, password: pwd });
+      Auth.save(data.token, data.user);
+      const role = data.user.role;
+      if (role === 'admin')     window.location.href = '/pages/admin.html';
+      else if (role === 'recruteur') window.location.href = '/pages/recruteur.html';
+      else window.location.href = '/pages/offres.html';
+    } catch(err) {
+      showAlert('auth-alert', err.message || 'Erreur lors de la connexion.', 'danger');
+      btn.disabled = false;
+      btn.textContent = 'Se connecter';
+    }
+  });
+
+  /* ── Register ── */
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    clearAlert('auth-alert');
+    const btn   = document.getElementById('register-btn');
+    const prenom    = document.getElementById('reg-prenom').value.trim();
+    const nom       = document.getElementById('reg-nom').value.trim();
+    const email     = document.getElementById('reg-email').value.trim();
+    const telephone = document.getElementById('reg-telephone').value.trim();
+    const pwd       = document.getElementById('reg-password').value;
+    const pwd2      = document.getElementById('reg-password2').value;
+
+    if (!prenom || !nom || !email || !pwd) {
+      showAlert('auth-alert', 'Veuillez remplir tous les champs obligatoires.'); return;
+    }
+    const errors = validatePassword(pwd);
+    if (errors.length) {
+      showAlert('auth-alert', 'Mot de passe insuffisant : ' + errors.join(', ') + '.'); return;
+    }
+    if (pwd !== pwd2) {
+      showAlert('auth-alert', 'Les mots de passe ne correspondent pas.'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Création…';
+    try {
+      await API.post('/api/auth/register', { email, password: pwd, nom, prenom, telephone: telephone || undefined });
+      showAlert('auth-alert', 'Compte créé avec succès ! Vous pouvez maintenant vous connecter.', 'success');
+      // Switch to login tab
+      document.querySelector('[data-tab="login"]').click();
+      document.getElementById('login-email').value = email;
+    } catch(err) {
+      showAlert('auth-alert', err.message || 'Erreur lors de l\'inscription.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Créer mon compte';
+    }
+  });
+</script>
+</body>
+</html>
