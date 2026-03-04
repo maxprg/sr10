@@ -1,0 +1,6 @@
+node_modules/
+sr10.db
+*.db-shm
+*.db-wal
+.env
+.DS_Store
